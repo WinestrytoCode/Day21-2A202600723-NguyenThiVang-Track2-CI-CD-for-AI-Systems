@@ -2,7 +2,21 @@ import os
 import json
 import numpy as np
 import pandas as pd
+import pytest
+import mlflow
 from src.train import train
+
+
+@pytest.fixture(autouse=True)
+def isolated_mlflow(tmp_path):
+    """
+    Cho moi test ghi MLflow vao mot thu muc tam thoi rieng biet.
+
+    Tranh phu thuoc vao thu muc mlruns/ cua repo (co the thieu meta.yaml
+    tren CI runner sach), dam bao test chay duoc o moi truong bat ky.
+    """
+    mlflow.set_tracking_uri(f"file://{tmp_path / 'mlruns'}")
+    yield
 
 
 FEATURE_NAMES = [
