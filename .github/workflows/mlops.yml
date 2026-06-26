@@ -54,8 +54,13 @@ jobs:
 
       - name: Authenticate to Cloud Storage
         # TODO 2: Ghi credentials ra file tam va set bien moi truong xac thuc (GCP)
+        # Truyen secret qua bien moi truong (GitHub tu escape) thay vi noi suy
+        # truc tiep vao shell - tranh lam hong JSON co ky tu \n trong private_key.
+        env:
+          CLOUD_CREDENTIALS: ${{ secrets.CLOUD_CREDENTIALS }}
         run: |
-          echo '${{ secrets.CLOUD_CREDENTIALS }}' > /tmp/sa-key.json
+          printf '%s' "$CLOUD_CREDENTIALS" > /tmp/sa-key.json
+          python -c "import json; json.load(open('/tmp/sa-key.json')); print('sa-key.json hop le')"
           echo "GOOGLE_APPLICATION_CREDENTIALS=/tmp/sa-key.json" >> $GITHUB_ENV
 
       - name: Pull data with DVC
