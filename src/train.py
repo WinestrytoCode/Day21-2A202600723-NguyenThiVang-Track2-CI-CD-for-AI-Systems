@@ -107,6 +107,12 @@ def train(
         accuracy (float): do chinh xac tren tap danh gia.
     """
 
+    # Bonus 1: neu co MLFLOW_TRACKING_URI (vd DagsHub), ghi thi nghiem len server tu xa.
+    # MLflow tu doc bien moi truong nay, nhung set tuong minh de ro rang.
+    tracking_uri = os.environ.get("MLFLOW_TRACKING_URI")
+    if tracking_uri:
+        mlflow.set_tracking_uri(tracking_uri)
+
     # TODO 1: Doc du lieu huan luyen va danh gia
     df_train = pd.read_csv(data_path)
     df_eval  = pd.read_csv(eval_path)
