@@ -1,5 +1,7 @@
-# Sieu tham so cho mo hinh RandomForestClassifier
-# Thay doi cac gia tri nay giua cac lan chay de thi nghiem (Buoc 1)
-n_estimators: 200
-max_depth: 10
-min_samples_split: 10
+# Sieu tham so cho mo hinh phan loai chat luong ruou vang.
+# Bonus 2: model_type chon thuat toan (random_forest | gradient_boosting |
+#          extra_trees | logistic_regression).
+# Thay doi cac gia tri nay giua cac lan chay de thi nghiem (Buoc 1).
+model_type: extra_trees
+n_estimators: 300
+min_samples_split: 2

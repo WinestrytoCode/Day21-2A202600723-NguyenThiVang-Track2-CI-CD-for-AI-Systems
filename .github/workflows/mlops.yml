@@ -72,6 +72,38 @@ jobs:
           ACC=$(python -c "import json; d=json.load(open('outputs/metrics.json')); print(d['accuracy'])")
           echo "accuracy=$ACC" >> $GITHUB_OUTPUT
 
+      - name: Rollback guard - compare with deployed model
+        # Bonus 4: Tai metrics.json cua model dang chay tren GCS (neu co)
+        #          va so sanh accuracy. Chi cho phep deploy khi model moi
+        #          co accuracy >= model cu. Neu kem hon, huy pipeline.
+        run: |
+          python - <<'EOF'
+          import os, json
+          from google.cloud import storage
+
+          bucket_name = os.environ["CLOUD_BUCKET"]
+          client = storage.Client()
+          bucket = client.bucket(bucket_name)
+
+          with open("outputs/metrics.json") as f:
+              new_acc = float(json.load(f)["accuracy"])
+
+          old_blob = bucket.blob("models/latest/metrics.json")
+          if old_blob.exists():
+              old_acc = float(json.loads(old_blob.download_as_text())["accuracy"])
+              print(f"Model cu: accuracy={old_acc:.4f} | Model moi: accuracy={new_acc:.4f}")
+              if new_acc < old_acc:
+                  raise SystemExit(
+                      f"ROLLBACK: model moi ({new_acc:.4f}) kem hon model dang chay "
+                      f"({old_acc:.4f}). Huy deploy de giu model cu."
+                  )
+              print("Model moi tot hon hoac bang. Tiep tuc deploy.")
+          else:
+              print(f"Chua co model cu tren GCS. Deploy lan dau (accuracy={new_acc:.4f}).")
+          EOF
+        env:
+          CLOUD_BUCKET: ${{ secrets.CLOUD_BUCKET }}
+
       - name: Upload model to Cloud Storage
         # TODO 5: Upload models/model.pkl len gs://<bucket>/models/latest/model.pkl
         run: |
@@ -82,9 +114,12 @@ jobs:
           bucket_name = os.environ["CLOUD_BUCKET"]
           client = storage.Client()
           bucket = client.bucket(bucket_name)
-          blob = bucket.blob("models/latest/model.pkl")
-          blob.upload_from_filename("models/model.pkl")
-          print(f"Model uploaded to gs://{bucket_name}/models/latest/model.pkl")
+
+          # Upload model
+          bucket.blob("models/latest/model.pkl").upload_from_filename("models/model.pkl")
+          # Bonus 4: luu kem metrics de lan chay sau co the so sanh rollback
+          bucket.blob("models/latest/metrics.json").upload_from_filename("outputs/metrics.json")
+          print(f"Model + metrics uploaded to gs://{bucket_name}/models/latest/")
           EOF
         env:
           CLOUD_BUCKET: ${{ secrets.CLOUD_BUCKET }}
@@ -93,7 +128,10 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: metrics
-          path: outputs/metrics.json
+          # Bonus 3: luu ca report.txt cung metrics.json
+          path: |
+            outputs/metrics.json
+            outputs/report.txt
 
 
   # ---------------------------------------------------------------------------
