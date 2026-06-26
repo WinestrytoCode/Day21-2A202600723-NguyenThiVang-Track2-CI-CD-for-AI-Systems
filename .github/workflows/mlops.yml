@@ -183,6 +183,17 @@ jobs:
           script: |
             # TODO 7: Restart service mlops-serve tren VM
             sudo systemctl restart mlops-serve
-            # TODO 8: Cho server san sang roi health check
-            sleep 5
-            curl -sf http://localhost:8000/health && echo "Health check passed." || exit 1
+            # TODO 8: Cho server san sang roi health check.
+            # Server can vai giay de tai model tu GCS, nen thu lai nhieu lan
+            # thay vi cho co dinh - vua chac chan vua nhanh khi server len som.
+            for i in $(seq 1 12); do
+              if curl -sf http://localhost:8000/health; then
+                echo "Health check passed (lan thu $i)."
+                exit 0
+              fi
+              echo "Server chua san sang, cho 5s... ($i/12)"
+              sleep 5
+            done
+            echo "Health check that bai sau 60s."
+            sudo journalctl -u mlops-serve -n 30 --no-pager
+            exit 1
